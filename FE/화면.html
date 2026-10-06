@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AskYES — 나의 재무 고민에 답하는 AI 재무설계 파트너</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="brand" href="./" aria-label="AskYES 홈">
+        <span class="logo" aria-hidden="true">Y<span>•</span></span>
+        <span class="wordmark">Ask<span>YES</span></span>
+      </a>
+      <div class="workspace">
+        <span class="workspace-avatar">J</span>
+        <div>준희님의 워크스페이스<small>PERSONAL FINANCE</small></div>
+        <span>⌄</span>
+      </div>
+      <button id="newChat" class="new-chat">
+        ＋ YES와 새 상담 <kbd>↗</kbd>
+      </button>
+      <div class="label">WORKSPACE</div>
+      <button class="nav active" id="chatNav">
+        <span>◈</span> YES와 재무 상담 <i></i></button
+      ><button class="nav" id="simNav">
+        <span>↗</span> 투자 시뮬레이터 <small>LAB</small>
+      </button>
+      <div class="label recent">RECENT CONVERSATIONS <span>＋</span></div>
+      <button
+        class="history selected"
+        data-topic="매달 50만 원 투자 계획을 검토하고 싶어요"
+      >
+        월 50만 원, 나의 첫 투자<span>진행 중</span></button
+      ><button
+        class="history"
+        data-topic="내 집 마련을 위한 재무계획을 세우고 싶어요"
+      >
+        내 집 마련, 어디서 시작할까?<span>예시 대화</span></button
+      ><button
+        class="history"
+        data-topic="연금과 적금의 차이를 검토하고 싶어요"
+      >
+        연금과 적금 사이의 고민<span>예시 대화</span>
+      </button>
+      <div class="sidebar-bottom">
+        <div class="journey">
+          <span>YOUR NEXT CHAPTER</span>
+          <h3>계획은 구체적으로,<br />미래는 나답게.</h3>
+          <div class="journey-art"><i></i><i></i><i></i><i></i><b>↗</b></div>
+        </div>
+        <button id="profileButton" class="profile">
+          <span class="profile-avatar">J</span>
+          <div>준희님<small>나의 재무 프로필</small></div>
+          <span>↗</span>
+        </button>
+      </div>
+    </aside>
+    <div class="app">
+      <header>
+        <div class="breadcrumb">
+          내 워크스페이스 <span>/</span> <b>YES와 재무 상담</b>
+        </div>
+        <div class="header-actions">
+          <span class="preview-tag">LOCAL DEVELOPMENT</span
+          ><button id="reportButton">▤ 대화 요약</button>
+        </div>
+      </header>
+      <div class="page-heading">
+        <div>
+          <div class="eyebrow"><span></span> ASK YOUR QUESTIONS. PLAN WITH YES.</div>
+          <h1>재무 고민은 YES에게 물어보세요.</h1>
+          <p>나의 재무 고민에 답하는 AI 재무설계 파트너</p>
+        </div>
+        <button class="mobile-sim" id="mobileSim">↗ 시뮬레이터</button>
+        <div class="heading-note">
+          <span class="mini-avatars">◈</span>
+          <div>
+            계획부터 시뮬레이션까지<small>하나의 대화로 이어져요</small>
+          </div>
+        </div>
+      </div>
+      <div class="dashboard">
+        <main class="chat-panel">
+          <div class="chat-header">
+            <div class="assistant-icon">✳</div>
+            <div>
+              <h2>YES · 재무설계 파트너 <span>AskYES</span></h2>
+              <p>
+                <i></i><span id="connectionStatus">Claude 서버 확인 중</span>
+              </p>
+            </div>
+            <button id="moreButton" aria-label="AskYES 소개">···</button>
+          </div>
+          <div class="chat-scroll" id="messages" aria-live="polite"></div>
+          <div class="composer-section">
+            <div class="suggestions">
+              <button data-topic="비상자금은 어떻게 준비할까요?">
+                비상자금부터 점검하기 ↗</button
+              ><button id="compareButton">수익률별로 비교하기 ↗</button>
+            </div>
+            <div id="attachment" hidden></div>
+            <form id="chatForm">
+              <label class="sr-only" for="prompt">재무 고민 입력</label
+              ><textarea
+                id="prompt"
+                rows="2"
+                placeholder="YES에게 재무 고민을 물어보세요."
+              ></textarea>
+              <div class="composer-bottom">
+                <button type="button" id="attachButton">
+                  ＋ <span>상담자료 첨부</span></button
+                ><input
+                  type="file"
+                  id="fileInput"
+                  hidden
+                  accept=".pdf,.txt,.png,.jpg,.jpeg"
+                />
+                <div>
+                  <span class="model-tag">✳ YES</span
+                  ><button
+                    type="submit"
+                    class="send"
+                    aria-label="메시지 보내기"
+                  >
+                    ↑
+                  </button>
+                </div>
+              </div>
+            </form>
+            <div class="disclaimer">
+              대화는 Anthropic으로 전송됩니다. 공식 자료 검색·RAG는 아직
+              연결되지 않았습니다.
+            </div>
+          </div>
+        </main>
+        <aside class="sim-panel" id="simPanel">
+          <div class="sim-top">
+            <span class="lab-tag">↗ INVESTMENT LAB</span
+            ><button
+              id="resetSim"
+              title="초기화"
+              aria-label="시뮬레이터 초기화"
+            >
+              ↺
+            </button>
+          </div>
+          <h2>상상한 미래를,<br /><span>숫자로 만나보세요.</span></h2>
+          <p class="sim-description">조건을 바꾸면 미래의 금액도 달라져요.</p>
+          <div class="sim-tabs">
+            <button class="active" id="basicTab">적립식 투자</button
+            ><button id="compareTab">시나리오 비교</button>
+          </div>
+          <div class="result-card">
+            <div class="result-heading">
+              <span><b id="yearsLabel">10</b>년 후 예상 평가액</span
+              ><span class="live-tag">● LIVE</span>
+            </div>
+            <div class="result-value" id="resultValue"></div>
+            <div class="result-gain">원금 대비 <span id="gain"></span></div>
+            <svg
+              id="chart"
+              viewBox="0 0 320 125"
+              role="img"
+              aria-label="투자기간에 따른 납입 원금과 예상 평가액"
+            >
+              <defs>
+                <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+                  <stop stop-color="#5379ff" stop-opacity=".25" />
+                  <stop offset="1" stop-color="#5379ff" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M0 25H320M0 65H320M0 105H320"
+                stroke="#e9edf8"
+                fill="none"
+              />
+              <path id="areaPath" fill="url(#area)" />
+              <path
+                id="principalPath"
+                fill="none"
+                stroke="#b4bfd4"
+                stroke-width="2"
+                stroke-dasharray="4 4"
+              />
+              <path
+                id="growthPath"
+                fill="none"
+                stroke="#466dff"
+                stroke-width="3"
+              />
+            </svg>
+            <div class="chart-axis">
+              <span>지금</span><span id="endYear">10년 뒤</span>
+            </div>
+            <div class="chart-legend">
+              <span><i></i>예상 평가액</span><span><i></i>납입 원금</span>
+            </div>
+            <div class="result-split">
+              <div>
+                <small>총 납입 원금</small><strong id="principal"></strong>
+              </div>
+              <div>
+                <small>예상 투자 수익</small><strong id="profit"></strong>
+              </div>
+            </div>
+          </div>
+          <div class="controls">
+            <label for="initial"
+              >초기 투자금
+              <span
+                ><input
+                  id="initial"
+                  type="number"
+                  value="0"
+                  min="0"
+                  max="1000000"
+                  step="10"
+                />
+                만 원</span
+              ></label
+            >
+            <div class="range-group">
+              <label for="monthly"
+                >매월 투자금
+                <strong><output id="monthlyOut">50</output>만 원</strong></label
+              ><input
+                id="monthly"
+                type="range"
+                min="0"
+                max="300"
+                step="5"
+                value="50"
+              />
+              <div class="range-labels">
+                <span>0원</span><span>300만 원</span>
+              </div>
+            </div>
+            <div class="range-group">
+              <label for="years"
+                >투자 기간
+                <strong><output id="yearsOut">10</output>년</strong></label
+              ><input id="years" type="range" min="1" max="30" value="10" />
+              <div class="range-labels"><span>1년</span><span>30년</span></div>
+            </div>
+            <div class="range-group">
+              <label for="rate"
+                >가정 연 수익률
+                <strong><output id="rateOut">5</output>%</strong></label
+              ><input
+                id="rate"
+                type="range"
+                min="-10"
+                max="15"
+                step="0.5"
+                value="5"
+              />
+              <div class="range-labels"><span>-10%</span><span>15%</span></div>
+            </div>
+          </div>
+          <div id="comparison" hidden></div>
+          <button id="sendSim" class="send-sim">
+            이 조건으로 YES와 상담하기 <span>↗</span>
+          </button>
+          <p class="sim-disclaimer">
+            수익률은 고정된 가정이며 실제 수익을 보장하지 않습니다.<br />월말
+            납입·연 수익률 ÷ 12 월 복리, 세금·수수료·물가 미반영.
+          </p>
+        </aside>
+      </div>
+      <footer>
+        AskYES <span>당신의 선택에, 더 선명한 근거를.</span
+        ><span>TEAM YES · Yonsei + Ewha + Sungshin</span>
+      </footer>
+    </div>
+    <dialog id="modal">
+      <div class="modal-top">
+        <h2 id="modalTitle"></h2>
+        <button id="closeModal" aria-label="닫기">×</button>
+      </div>
+      <div id="modalBody"></div>
+    </dialog>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

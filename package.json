@@ -1,0 +1,13 @@
+{
+  "name": "askyes-finance-chat",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.16"
+  },
+  "scripts": {
+    "dev": "node --watch BE/서버.mjs",
+    "start": "node BE/서버.mjs",
+    "test": "node --test 테스트/*.test.mjs"
+  }
+}
