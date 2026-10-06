@@ -121,3 +121,40 @@ test("HTTP handles context, credentials, errors, origin and static allowlist", a
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test('Vercel HTTPS origin and parsed JSON body reach Claude', async () => {
+  const { createServer } = await import('node:http');
+  const { makeHandler } = await import('../BE/서버.mjs');
+  let calls = 0;
+  const handler = makeHandler({
+    deployed: true,
+    allowedOrigins: ['https://askyes.vercel.app'],
+    getConfig: async () => ({ key: 'test-secret', model: 'test-model' }),
+    fetchImpl: async () => { calls++; return new Response(JSON.stringify({content:[{type:'text',text:'배포 응답'}]})); },
+  });
+  const server = createServer((req, res) => {
+    req.body = {messages:[{role:'user',content:'테스트'}]};
+    handler(req, res);
+  });
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const base='http://127.0.0.1:'+server.address().port;
+  const { request } = await import('node:http');
+  const send = (url, options = {}) => new Promise((resolve, reject) => {
+    const req = request(url, options, res => {
+      let body = '';
+      res.on('data', chunk => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, json: async () => JSON.parse(body) }));
+    });
+    req.on('error', reject);
+    req.end(options.body);
+  });
+  try {
+    const options={method:'POST',headers:{host:'askyes.vercel.app',origin:'https://askyes.vercel.app','content-type':'application/json'},body:'{}'};
+    const response=await send(base+'/api/chat',options);
+    assert.equal(response.status,200);
+    assert.equal((await response.json()).reply,'배포 응답');
+    const blocked=await send(base+'/api/chat',{...options,headers:{...options.headers,origin:'https://evil.example'}});
+    assert.equal(blocked.status,403);assert.equal(calls,1);
+    assert.equal((await send(base+'/api/health',{headers:{host:'evil.example'}})).status,403);
+  } finally {await new Promise(resolve=>server.close(resolve));}
+});

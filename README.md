@@ -99,3 +99,24 @@ git push -u origin junhee
 ```
 
 API 문서: https://platform.claude.com/docs/en/api/messages/create
+
+
+## Vercel 배포
+
+- Framework Preset: **Other**
+- Root Directory: **프로젝트 루트** (FE가 아님)
+- Production Branch: **junhee**
+- Build Command: `npm run build`
+- Output Directory: `public`
+- Node.js: **22.x**
+- 환경변수: `ANTHROPIC_API_KEY` (Production 및 필요한 Preview 환경)
+- 선택 환경변수: `ANTHROPIC_MODEL`, `ANTHROPIC_WORKSPACE_ID`
+- 별도 도메인을 쓰면 `APP_ORIGIN=https://도메인` 설정
+
+`vercel.json`이 빌드 및 함수 설정을 지정합니다. 설정·환경변수 변경 후 재배포하세요.
+
+`BE/배포준비.mjs`는 FE의 한국어 파일을 배포용 `public/`에 복사합니다. `api/chat.mjs`, `api/health.mjs`는 Vercel 전용 진입점이며 BE·AI 코드를 재사용합니다. `.env`와 상담 지침은 정적 공개 파일에 포함하지 않습니다.
+
+확인 경로: `/`는 화면, `/api/health`는 서버 상태입니다. `configured: false`이면 Vercel 환경변수에 키가 없는 상태입니다.
+
+현재 로그인은 없으며 메모리 기반 요청 제한은 함수 인스턴스마다 적용됩니다. 공개 서비스 전체의 사용자 인증·공유 요청 한도는 별도 구현이 필요합니다.

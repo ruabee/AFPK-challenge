@@ -74,7 +74,7 @@ async function runPending() {
     const data = await response
       .json()
       .catch(() => ({
-        error: "API 서버 응답을 확인할 수 없습니다. 4174 주소로 접속해주세요.",
+        error: "API 응답을 확인할 수 없습니다. 배포 상태를 확인해주세요.",
       }));
     if (!response.ok || typeof data.reply !== "string")
       throw new Error(data.error || "답변을 받지 못했습니다.");
@@ -96,7 +96,7 @@ async function runPending() {
       error.name === "TimeoutError"
         ? "답변 시간이 초과되었습니다. 다시 시도해주세요."
         : error instanceof TypeError
-          ? "서버에 연결할 수 없습니다. npm start 실행 여부를 확인해주세요."
+          ? "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요."
           : error.message;
     const retry = document.createElement("button");
     retry.className = "retry";

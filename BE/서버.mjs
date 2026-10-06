@@ -20,18 +20,18 @@ const assets = new Map([
   ["/simulator.js", ["투자시뮬레이터.js", "text/javascript"]],
   ["/style.css", ["디자인.css", "text/css"]],
 ]);
-export function makeServer({ getConfig = loadConfig, fetchImpl = fetch } = {}) {
+export function makeHandler({ getConfig = loadConfig, fetchImpl = fetch, deployed = false, allowedOrigins = [] } = {}) {
   let active = false,
     starts = [];
-  return createServer(async (req, res) => {
+  return async (req, res) => {
     try {
       const host = req.headers.host;
-      if (!/^(127\.0\.0\.1|localhost):\d+$/.test(host || ""))
-        return json(res, 403, { error: "로컬 주소로 접속해주세요." });
-      if (
-        req.headers.origin &&
-        ![`http://${host}`].includes(req.headers.origin)
-      )
+      const origins = deployed ? allowedOrigins : [`http://${host}`];
+      const allowedHost = deployed
+        ? origins.some(origin => { try { return new URL(origin).host === host; } catch { return false; } })
+        : /^(127\.0\.0\.1|localhost):\d+$/.test(host || "");
+      if (!allowedHost) return json(res, 403, { error: "허용되지 않은 서비스 주소입니다." });
+      if (req.headers.origin && !origins.includes(req.headers.origin))
         return json(res, 403, { error: "허용되지 않은 요청입니다." });
       if (req.headers["sec-fetch-site"] === "cross-site")
         return json(res, 403, { error: "허용되지 않은 요청입니다." });
@@ -58,25 +58,29 @@ export function makeServer({ getConfig = loadConfig, fetchImpl = fetch } = {}) {
         return json(res, 404, { error: "찾을 수 없습니다." });
       if (!req.headers["content-type"]?.startsWith("application/json"))
         throw new ClientError(415, "JSON 요청이 필요합니다.");
-      let size = 0;
-      const chunks = [];
-      for await (const chunk of req) {
-        size += chunk.length;
-        if (size > 400000) throw new ClientError(413, "메시지가 너무 큽니다.");
-        chunks.push(chunk);
-      }
       let body;
-      try {
-        body = JSON.parse(Buffer.concat(chunks).toString());
-      } catch {
-        throw new ClientError(400, "요청 형식을 확인해주세요.");
+      if (req.body !== undefined) {
+        // Vercel 함수에서는 JSON 요청이 이미 해석되어 전달될 수 있습니다.
+        const raw = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+        if (Buffer.byteLength(raw) > 400000) throw new ClientError(413, '메시지가 너무 큽니다.');
+        try { body = JSON.parse(raw); } catch { throw new ClientError(400, '요청 형식을 확인해주세요.'); }
+      } else {
+        let size = 0;
+        const chunks = [];
+        for await (const chunk of req) {
+          size += chunk.length;
+          if (size > 400000) throw new ClientError(413, '메시지가 너무 큽니다.');
+          chunks.push(chunk);
+        }
+        try { body = JSON.parse(Buffer.concat(chunks).toString()); }
+        catch { throw new ClientError(400, '요청 형식을 확인해주세요.'); }
       }
       const { messages, simulation } = validatePayload(body);
       const c = await getConfig();
       if (!c.key)
         throw new ClientError(
           503,
-          "프로젝트 .env에 ANTHROPIC_API_KEY를 입력해주세요.",
+          "서버 환경변수 ANTHROPIC_API_KEY를 설정해주세요.",
         );
       if (active)
         throw new ClientError(
@@ -123,8 +127,13 @@ export function makeServer({ getConfig = loadConfig, fetchImpl = fetch } = {}) {
             e instanceof ClientError ? e.message : "서버 설정을 확인해주세요.",
         });
     }
-  });
+  };
 }
+
+export function makeServer(options) {
+  return createServer(makeHandler(options));
+}
+
 if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href

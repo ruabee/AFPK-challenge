@@ -3,11 +3,12 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.16"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "node --watch BE/서버.mjs",
     "start": "node BE/서버.mjs",
-    "test": "node --test 테스트/*.test.mjs"
+    "test": "node --test 테스트/*.test.mjs",
+    "build": "node BE/배포준비.mjs"
   }
 }
