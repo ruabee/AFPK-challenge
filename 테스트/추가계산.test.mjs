@@ -34,3 +34,21 @@ test('검증 실패에서도 검증된 차액과 후속질문을 보존',async()
  assert.ok(result.body.reply.includes('연금이 시작되는 나이'));
  assert.ok(!result.body.reply.includes('999억원'));
 });
+
+test('반복 입력 오류는 고정문 대신 전체 대화를 이용한 확인 질문으로 복구',async()=>{
+ const {askClaude}=await import('../AI/클로드연결.mjs');
+ const messages=[{role:'user',content:'주식을 예금으로 바꾸자'},{role:'assistant',content:'금액의 기준 시점을 알려주세요.'},{role:'user',content:'뭐를 채우라는거야'}];
+ let n=0;
+ const result=await askClaude({config:{key:'test',model:'test'},messages,indexLoader:async()=>({documents:[],chunks:[]}),fetchImpl:async(_url,options)=>{
+  const request=JSON.parse(options.body);
+  if(n++<2) return new Response(JSON.stringify({content:[{type:'tool_use',id:'bad'+n,name:'update_customer_profile',input:{changes:[{path:'totalAssets',value:60000000,quote:'없는 원문',messageIndex:0}]}}]}));
+  assert.deepEqual(request.tool_choice,{type:'none'});
+  assert.equal(request.messages[2].content,'뭐를 채우라는거야');
+  assert.match(JSON.stringify(request.messages.at(-1)),/사용자 잘못이 아니다/);
+  return new Response(JSON.stringify({content:[{type:'text',text:'기존 예금은 그대로 두고 주식만 예금으로 바꾸는 뜻인가요, 아니면 예금 총액을 바꾸는 뜻인가요?'}]}));
+ }});
+ assert.equal(n,3);
+ assert.match(result.body.reply,/기존 예금은 그대로/);
+ assert.doesNotMatch(result.body.reply,/금액의 기준 시점과 기간/);
+ assert.equal(Object.keys(result.body.customerProfile.facts).length,0);
+});

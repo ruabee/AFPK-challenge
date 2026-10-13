@@ -90,6 +90,7 @@ export async function askClaude({
       search: initialSearch,
     });
   let inputErrors = 0;
+  let clarificationOnly = false;
   let calls = 0,
     repair = false;
   for (let round = 0; round < 8; round++) {
@@ -110,6 +111,7 @@ export async function askClaude({
         system,
         messages: outgoing,
         tools: TOOLS,
+        ...(clarificationOnly ? { tool_choice: { type: "none" } } : {}),
       }),
       signal,
     });
@@ -144,10 +146,8 @@ export async function askClaude({
           inputErrors++;
           response = { error: e.message };
           if (inputErrors >= 2 && /근거|일치|누락|단위|사용자 발언/.test(e.message)) {
-            const question = /저축|모으|결혼/.test(messages.at(-1).content)
-              ? "목표금액과 기간을 바탕으로 계산할 수 있습니다. 저축에 적용할 연 수익률을 알려주세요. 이자를 제외한 계산을 원하시면 그렇게 말씀해주세요."
-              : "입력한 정보 중 계산 기준을 확인할 부분이 있습니다. 금액의 기준 시점과 기간, 사용할 수익률 가정을 알려주세요. 확인하지 않은 값은 임의로 채우지 않겠습니다.";
-            return {status:200,body:{reply:question,customerProfile:profile,planning:profileSummary(profile),sources:[],calculations:context.calculations,toolCalls:calls,validation:{status:"needs_review",issues:[{code:"input_confirmation",message:"정보 확인 질문으로 전환했습니다."}]}}};
+            clarificationOnly = true;
+            response.nextAction = "도구 입력 오류는 사용자 잘못이 아니다. 더 이상 도구를 재시도하지 말고 전체 대화와 방금 오류를 읽어 필요한 확인 질문 하나만 자연어로 작성하라. 이미 받은 정보를 다시 요구하지 말 것. 숫자를 재인용하거나 계산하지 않아도 된다. 정정이면 어떤 항목을 대체하는지 확인하고, 미래 예상 소득은 현재 소득과 구분한다. '기준 시점과 기간, 수익률 가정을 알려주세요' 같은 포괄적 문구를 반복하지 말 것. 직전 질문을 사용자가 이해하지 못했다면 쉬운 선택지로 풀어 설명하라.";
           }
         }
         results.push({
