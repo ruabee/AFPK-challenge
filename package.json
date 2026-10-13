@@ -9,6 +9,15 @@
     "dev": "node --watch BE/서버.mjs",
     "start": "node BE/서버.mjs",
     "test": "node --test 테스트/*.test.mjs",
-    "build": "node BE/배포준비.mjs"
+    "build": "npm run 계산:빌드 && npm run rag:index && node BE/배포준비.mjs",
+    "계산:빌드": "tsc -p 재무설계_계산/tsconfig.json",
+    "rag:index": "node AI/재무설계_RAG/인덱스생성.mjs",
+    "pretest": "npm run 계산:빌드",
+    "prestart": "npm run 계산:빌드",
+    "predev": "npm run 계산:빌드"
+  },
+  "devDependencies": {
+    "pdfjs-dist": "^5.4.624",
+    "typescript": "^5.9.3"
   }
 }

@@ -3,6 +3,8 @@ import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { root, loadConfig } from "./환경설정.mjs";
 import { ClientError, validatePayload } from "./요청검증.mjs";
+import { normalizeProfile } from "../AI/고객정보/고객정보.mjs";
+import { loadIndex } from "../AI/재무설계_RAG/문서검색.mjs";
 import { askClaude } from "../AI/클로드연결.mjs";
 
 function json(res, status, data) {
@@ -17,10 +19,16 @@ const assets = new Map([
   ["/", ["화면.html", "text/html"]],
   ["/index.html", ["화면.html", "text/html"]],
   ["/app.js", ["대화.js", "text/javascript"]],
+  ["/planning-profile.js", ["고객정보.js", "text/javascript"]],
   ["/simulator.js", ["투자시뮬레이터.js", "text/javascript"]],
   ["/style.css", ["디자인.css", "text/css"]],
 ]);
-export function makeHandler({ getConfig = loadConfig, fetchImpl = fetch, deployed = false, allowedOrigins = [] } = {}) {
+export function makeHandler({
+  getConfig = loadConfig,
+  fetchImpl = fetch,
+  deployed = false,
+  allowedOrigins = [],
+} = {}) {
   let active = false,
     starts = [];
   return async (req, res) => {
@@ -28,9 +36,16 @@ export function makeHandler({ getConfig = loadConfig, fetchImpl = fetch, deploye
       const host = req.headers.host;
       const origins = deployed ? allowedOrigins : [`http://${host}`];
       const allowedHost = deployed
-        ? origins.some(origin => { try { return new URL(origin).host === host; } catch { return false; } })
+        ? origins.some((origin) => {
+            try {
+              return new URL(origin).host === host;
+            } catch {
+              return false;
+            }
+          })
         : /^(127\.0\.0\.1|localhost):\d+$/.test(host || "");
-      if (!allowedHost) return json(res, 403, { error: "허용되지 않은 서비스 주소입니다." });
+      if (!allowedHost)
+        return json(res, 403, { error: "허용되지 않은 서비스 주소입니다." });
       if (req.headers.origin && !origins.includes(req.headers.origin))
         return json(res, 403, { error: "허용되지 않은 요청입니다." });
       if (req.headers["sec-fetch-site"] === "cross-site")
@@ -41,7 +56,8 @@ export function makeHandler({ getConfig = loadConfig, fetchImpl = fetch, deploye
         return json(res, 200, {
           configured: !!c.key,
           model: c.model,
-          rag: false,
+          rag: (await loadIndex()).documents?.length > 0,
+          planning: true,
         });
       }
       if (req.method === "GET" && assets.has(path)) {
@@ -61,21 +77,37 @@ export function makeHandler({ getConfig = loadConfig, fetchImpl = fetch, deploye
       let body;
       if (req.body !== undefined) {
         // Vercel 함수에서는 JSON 요청이 이미 해석되어 전달될 수 있습니다.
-        const raw = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-        if (Buffer.byteLength(raw) > 400000) throw new ClientError(413, '메시지가 너무 큽니다.');
-        try { body = JSON.parse(raw); } catch { throw new ClientError(400, '요청 형식을 확인해주세요.'); }
+        const raw =
+          typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+        if (Buffer.byteLength(raw) > 400000)
+          throw new ClientError(413, "메시지가 너무 큽니다.");
+        try {
+          body = JSON.parse(raw);
+        } catch {
+          throw new ClientError(400, "요청 형식을 확인해주세요.");
+        }
       } else {
         let size = 0;
         const chunks = [];
         for await (const chunk of req) {
           size += chunk.length;
-          if (size > 400000) throw new ClientError(413, '메시지가 너무 큽니다.');
+          if (size > 400000)
+            throw new ClientError(413, "메시지가 너무 큽니다.");
           chunks.push(chunk);
         }
-        try { body = JSON.parse(Buffer.concat(chunks).toString()); }
-        catch { throw new ClientError(400, '요청 형식을 확인해주세요.'); }
+        try {
+          body = JSON.parse(Buffer.concat(chunks).toString());
+        } catch {
+          throw new ClientError(400, "요청 형식을 확인해주세요.");
+        }
       }
       const { messages, simulation } = validatePayload(body);
+      let customerProfile;
+      try {
+        customerProfile = normalizeProfile(body.customerProfile, messages);
+      } catch (error) {
+        throw new ClientError(400, error.message);
+      }
       const c = await getConfig();
       if (!c.key)
         throw new ClientError(
@@ -96,7 +128,7 @@ export function makeHandler({ getConfig = loadConfig, fetchImpl = fetch, deploye
       active = true;
       starts.push(Date.now());
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 60000);
+      const timer = setTimeout(() => controller.abort(), 80000);
       res.on("close", () => {
         if (!res.writableEnded) controller.abort();
       });
@@ -105,6 +137,7 @@ export function makeHandler({ getConfig = loadConfig, fetchImpl = fetch, deploye
           config: c,
           messages,
           simulation,
+          customerProfile,
           signal: controller.signal,
           fetchImpl,
         });
@@ -140,7 +173,7 @@ if (
 ) {
   const config = await loadConfig();
   const server = makeServer();
-  server.requestTimeout = 70000;
+  server.requestTimeout = 85000;
   server.on("error", (e) => {
     console.error(
       e.code === "EADDRINUSE"

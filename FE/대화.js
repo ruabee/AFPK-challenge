@@ -1,3 +1,13 @@
+import {
+  getProfile,
+  resetProfile,
+  acceptPlanning,
+  showProfile,
+  appendEvidence,
+  setupPlanning,
+  setupIntake,
+  showIntake,
+} from "./planning-profile.js";
 import { settings, calculate, money } from "./simulator.js";
 
 const $ = (s) => document.querySelector(s);
@@ -68,14 +78,13 @@ async function runPending() {
       body: JSON.stringify({
         messages: [...history, { role: "user", content: current.text }],
         simulation: current.simulation,
+        customerProfile: getProfile(),
       }),
-      signal: AbortSignal.timeout(65000),
+      signal: AbortSignal.timeout(85000),
     });
-    const data = await response
-      .json()
-      .catch(() => ({
-        error: "API 응답을 확인할 수 없습니다. 배포 상태를 확인해주세요.",
-      }));
+    const data = await response.json().catch(() => ({
+      error: "API 응답을 확인할 수 없습니다. 배포 상태를 확인해주세요.",
+    }));
     if (!response.ok || typeof data.reply !== "string")
       throw new Error(data.error || "답변을 받지 못했습니다.");
     loading.p.textContent =
@@ -83,6 +92,8 @@ async function runPending() {
       (data.truncated
         ? "\n\n[응답 길이 제한으로 일부 내용이 생략되었습니다. 이어서 질문해주세요.]"
         : "");
+    acceptPlanning(data);
+    appendEvidence(loading.content, data);
     history.push(
       { role: "user", content: current.text },
       { role: "assistant", content: data.reply },
@@ -185,6 +196,7 @@ $("#newChat").onclick = () => {
   $("#messages").innerHTML = "";
   turns = 0;
   history = [];
+  resetProfile();
   pending = null;
   simulationContext = null;
   addMessage(
@@ -194,6 +206,7 @@ $("#newChat").onclick = () => {
   $("#fileInput").value = "";
   $("#attachment").hidden = true;
   $("#prompt").focus();
+  showIntake();
 };
 $("#chatNav").onclick = () => {
   $(".chat-panel").scrollIntoView({ behavior: "smooth" });
@@ -205,11 +218,7 @@ function modal(title, body) {
   $("#modal").showModal();
 }
 $("#closeModal").onclick = () => $("#modal").close();
-$("#profileButton").onclick = () =>
-  modal(
-    "나의 재무 프로필",
-    "재무 프로필에는 월 소득, 고정 지출, 자산·부채, 비상자금, 목표 시점을 담을 예정입니다. 현재 화면의 대화와 금액은 예시 데이터입니다.",
-  );
+$("#profileButton").onclick = showProfile;
 $("#reportButton").onclick = () => {
   const s = settings(),
     r = calculate(s);
@@ -221,7 +230,7 @@ $("#reportButton").onclick = () => {
 $("#moreButton").onclick = () =>
   modal(
     "AskYES · 팀 YES",
-    "나의 재무 고민에 답하는 AI 재무설계 파트너, AskYES.\n\n팀 YES는 Y(onsei) + E(wha) + S(ungshin)을 뜻합니다.\n\n대화와 연결한 시뮬레이션 조건을 Anthropic Claude API로 전달합니다. RAG·웹 검색·파일 분석은 아직 연결하지 않았습니다. 입력 데이터는 현재 탭에서만 유지되며 새로고침하면 초기화됩니다.",
+    "나의 재무 고민에 답하는 AI 재무설계 파트너, AskYES.\n\n팀 YES는 Y(onsei) + E(wha) + S(ungshin)을 뜻합니다.\n\n대화와 연결한 시뮬레이션 조건을 Anthropic Claude API로 전달합니다. 검수된 자료를 검색하는 RAG와 재무계산 도구를 사용합니다. 실시간 웹 검색·상담 파일 업로드는 아직 지원하지 않습니다. 입력 데이터는 현재 탭에서만 유지되며 새로고침하면 초기화됩니다.",
   );
 $("#attachButton").onclick = () =>
   modal(
@@ -242,3 +251,11 @@ addMessage(
   "안녕하세요. AskYES의 AI 재무설계 파트너 YES입니다.\n\n직접 세운 계획이나 상담받은 내용에서 어떤 점이 고민되시나요? 투자 예상 금액은 옆 시뮬레이터에서 확인하고 대화로 가져올 수 있어요.",
 );
 checkConnection();
+
+setupPlanning();
+
+setupIntake((text) => {
+  if (busy || pending || history.length >= 40) return false;
+  send(text);
+  return true;
+});

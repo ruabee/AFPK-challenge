@@ -7,3 +7,6 @@ coverage/
 *.log
 public/
 .vercel/
+재무설계_계산/생성/
+AI/재무설계_RAG/검색인덱스.json
+AI/재무설계_RAG/*.tmp

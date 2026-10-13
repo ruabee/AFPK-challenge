@@ -1290,3 +1290,24 @@ button:disabled {
   .page-heading h1 { font-size: 19px; line-height: 1.5; }
   footer { flex-wrap: wrap; }
 }
+
+/* 재무설계 상담 보조 정보 */
+.planning-stage { padding: 10px 24px; color: #6177a4; background: #f5f7fd; font-size: 10px; }
+.profile-fact { padding: 12px 0; border-bottom: 1px solid #e3e8f4; overflow-wrap: anywhere; }
+.profile-fact p { margin: 4px 0; }
+.answer details { margin: 12px 0; color: #65799f; font-size: 10px; }
+.answer details pre { overflow: auto; max-height: 260px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.answer details a { color: #4e70c0; }
+.validation-note { display: block; font-size: 9px; color: #8c7890; margin-top: 10px; }
+
+/* 상담 기본정보: 투자 시뮬레이터와 독립된 입력 화면 */
+.intake-banner { display:flex; gap:12px; align-items:center; justify-content:space-between; padding:12px 20px; background:#eef2ff; color:#394676; font-size:13px; }
+.intake-banner button,.intake-primary { background:#4662ce; color:white; border:0; border-radius:10px; padding:11px 16px; cursor:pointer; }
+.intake-banner button { flex-shrink:0; }
+.intake-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin:20px 0; }
+.intake-form label { display:flex; flex-direction:column; gap:7px; font-size:13px; color:#394676; }
+.intake-form input,.intake-form select { width:100%; box-sizing:border-box; border:1px solid #ccd4eb; border-radius:8px; padding:10px; font:inherit; background:white; color:#18254a; }
+.intake-form [role=alert],.intake-form > button { grid-column:1/-1; }
+.intake-form [role=alert] { color:#a3233d; margin:0; }
+#modal { max-height:85vh; overflow:auto; }
+@media(max-width:600px) { .intake-form { grid-template-columns:1fr; } .intake-banner { flex-direction:column; align-items:stretch; } }
