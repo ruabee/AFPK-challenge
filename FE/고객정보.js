@@ -164,15 +164,9 @@ export function appendEvidence(container, data) {
   }
   const status = document.createElement("small");
   status.className = "validation-note";
-  status.textContent =
-    data.validation?.status === "blocked"
-      ? "검증되지 않은 답변을 보류했습니다."
-      : data.validation?.status === "needs_review"
-        ? "추가 확인이 필요한 항목이 있습니다."
-        : "수치·출처 자동검사 완료 · 개인 적용 적합성은 별도 확인이 필요합니다.";
-  if (data.validation?.issues?.length)
-    status.textContent +=
-      " " + data.validation.issues.map((x) => x.message).join(" ");
+  status.textContent = data.sources?.length
+    ? "답변에 인용한 자료 · 아래 출처에서 원문과 확인일을 볼 수 있습니다."
+    : "일반 안내 · 이 답변에는 등록된 공식 자료의 인용이 없습니다.";
   container.append(status);
 }
 export function setupPlanning() {

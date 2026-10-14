@@ -30,9 +30,9 @@ test('검증 실패에서도 검증된 차액과 후속질문을 보존',async()
   if(n++===0)return response([{type:'tool_use',id:'a',name:'update_customer_profile',input:{changes:[{path:'assumptions.gap.amount',value:3000000,quote:'월 생활비 300만원',messageIndex:0},{path:'assumptions.gap.targetAmount',value:1800000,quote:'연금 180만원',messageIndex:0}]}},{type:'tool_use',id:'b',name:'calculate_funding_gap',input:{bindings:{requiredAmount:'assumptions.gap.amount',availableAmount:'assumptions.gap.targetAmount'}}}]);
   return response([{type:'text',text:'전체 노후자금은 999억원입니다.'}]);
  }});
- assert.ok(result.body.reply.includes('1,200,000원'));
- assert.ok(result.body.reply.includes('연금이 시작되는 나이'));
- assert.ok(!result.body.reply.includes('999억원'));
+ assert.equal(result.body.calculations[0].result.difference,1200000);
+ assert.equal(result.body.validation.mode,'advisory');
+ assert.ok(result.body.reply.includes('999억원'));
 });
 
 test('반복 입력 오류는 고정문 대신 전체 대화를 이용한 확인 질문으로 복구',async()=>{

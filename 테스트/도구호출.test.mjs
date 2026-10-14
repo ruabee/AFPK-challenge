@@ -119,7 +119,7 @@ test("반복 도구 요청에 한도를 두고 고객정보 유지", async () =>
   assert.equal(r.body.validation.issues[0].code, "tool_limit");
   assert.equal(r.body.toolCalls, 8);
 });
-test("근거 없는 규정·숫자는 재검토 후에도 불일치하면 차단", async () => {
+test("검사 의견은 남기되 응답을 차단하거나 교체하지 않음", async () => {
   let calls = 0;
   const r = await askClaude({
     config,
@@ -130,9 +130,10 @@ test("근거 없는 규정·숫자는 재검토 후에도 불일치하면 차단
       return answer([{ type: "text", text: "공제 한도는 999만원입니다." }]);
     },
   });
-  assert.equal(calls, 2);
-  assert.equal(r.body.validation.status, "blocked");
-  assert.ok(!r.body.reply.includes("999"));
+  assert.equal(calls, 1);
+  assert.equal(r.body.validation.status, "needs_review");
+  assert.equal(r.body.validation.mode, "advisory");
+  assert.ok(r.body.reply.includes("999"));
 });
 test("출처 위조·금액 불일치·적용 연도를 대조", () => {
   const profile = { facts: { amount: { value: 3000000 } } };
