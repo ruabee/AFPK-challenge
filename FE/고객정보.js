@@ -192,19 +192,20 @@ export function showIntake() {
   document.getElementById("modalTitle").textContent = "나의 상황부터, 편하게 알려주세요";
   body.replaceChildren();
   const note = document.createElement("p");
-  note.textContent = "모르는 항목은 비워두세요. 빈칸은 새 정보로 보내지 않으며, 기존 정보도 지우지 않습니다. 금액은 원 단위이고 0원도 직접 입력할 수 있어요. 전송한 내용은 상담을 위해 Anthropic에 전달되며 현재 탭에서만 유지됩니다.";
+  note.textContent = "모르는 항목은 비워두세요. 빈칸은 새 정보로 보내지 않으며, 기존 정보도 지우지 않습니다. 금액은 만원 단위입니다. 예를 들어 월 소득 200만원은 200을 입력하세요. 0도 직접 입력할 수 있어요. 전송한 내용은 상담을 위해 Anthropic에 전달되며 현재 탭에서만 유지됩니다.";
   body.append(note);
   const form = document.createElement("form");
   form.className = "intake-form";
   const inputs = [];
   for (const [key, title, unit] of intakeFields) {
     const label = document.createElement("label");
-    label.textContent = title + (unit === "KRW" ? " (원)" : unit === "age" ? " (세)" : "");
+    label.textContent = title + (unit === "KRW" ? " (만원)" : unit === "age" ? " (세)" : "");
     const input = document.createElement("input");
     input.type = unit === "text" ? "text" : "number";
     input.maxLength = 300;
-    if (unit !== "text") { input.min = "0"; input.max = unit === "age" ? "120" : "1000000000000000"; input.step = "1"; }
-    input.value = profile.facts[key]?.value ?? "";
+    if (unit !== "text") { input.min = "0"; input.max = unit === "age" ? "120" : "100000000000"; input.step = unit === "KRW" ? "0.0001" : "1"; }
+    const saved = profile.facts[key]?.value;
+    input.value = saved == null ? "" : unit === "KRW" ? saved / 10000 : saved;
     input.placeholder = "모름 / 건너뛰기";
     label.append(input); form.append(label); inputs.push({key,title,unit,input});
   }
@@ -222,7 +223,7 @@ export function showIntake() {
     const filled = inputs.filter(x => x.input.value.trim() !== "");
     if (!filled.length && !familyInput.value.trim()) { error.textContent = "알려주실 정보를 입력하거나 바로 대화하기를 선택해주세요."; return; }
     if (filled.some(x => x.unit === "KRW") && select.selectedIndex === 0) { error.textContent = "금액이 본인 기준인지 가구 전체 기준인지 선택해주세요."; return; }
-    const lines = filled.map(x => `${x.title}: ${x.input.value.trim()}${x.unit === "KRW" ? "원" : x.unit === "age" ? "세" : ""}`);
+    const lines = filled.map(x => `${x.title}: ${x.unit === "KRW" ? Math.round(Number(x.input.value) * 10000) : x.input.value.trim()}${x.unit === "KRW" ? "원" : x.unit === "age" ? "세" : ""}`);
     if (select.selectedIndex) lines.push("입력 금액 기준: " + select.value);
     if (familyInput.value.trim()) lines.push("가구 구성: " + familyInput.value.trim());
     const text = "제가 입력·수정한 재무정보입니다. 이번 입력을 우선 반영해주세요. 빈칸은 미제공이며 기존 정보 삭제나 0원을 뜻하지 않습니다.\n" + lines.join("\n") + "\n필요한 정보만 추가로 질문하며 재무계획을 함께 검토해주세요.";
