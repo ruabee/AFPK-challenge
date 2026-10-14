@@ -1,4 +1,5 @@
 import {
+  savingsPrincipal,
   fundingGap,
   loanPayment,
   financialStatus,
@@ -27,6 +28,7 @@ const bindings = {
     "각 입력 이름을 고객정보 facts 경로에 연결. 숫자를 직접 넣지 말 것.",
 };
 export const TOOLS = [
+  {name:"calculate_savings_principal",description:"수익률 없이 납입 원금만 비교. bindings.currentAmount,monthlySaving,targetAmount(KRW),months 필수. 소득·생활비·수익률 없이 실행 가능. 이자·투자손익 제외를 명시하고 먼저 이 도구로 답한다.",input_schema:object({bindings},["bindings"])},
   { name: "calculate_funding_gap", description: "같은 기준의 필요금액과 보유금액 차액. bindings.requiredAmount/availableAmount는 확인된 KRW 정보 경로. 월 생활비-월연금, 주택가격-현금 등. 총 은퇴자금/대출 승인액은 아님.", input_schema: object({bindings},["bindings"]) },
   { name: "calculate_loan_payment", description: "고정금리·거치 없는 원리금균등 월 상환액 시나리오. 사용자가 이 방식을 동의한 경우만 사용. bindings.principal(KRW),months,annualRate(percent) 필수. 승인한도·DSR·세금 계산 아님.", input_schema: object({bindings},["bindings"]) },
   {
@@ -145,6 +147,10 @@ export function executeTool(name, input, ctx) {
     return entry;
   };
   switch (name) {
+    case "calculate_savings_principal": {
+      const inputs = Object.fromEntries(["currentAmount","monthlySaving","targetAmount","months"].map(k=>[k,value(profile,input.bindings?.[k],k === "months" ? "months" : "KRW")]));
+      return record(name,inputs,savingsPrincipal(inputs));
+    }
     case "calculate_funding_gap": {
       const inputs = Object.fromEntries(["requiredAmount","availableAmount"].map(k=>[k,value(profile,input.bindings?.[k],"KRW")]));
       return record(name,inputs,fundingGap(inputs));

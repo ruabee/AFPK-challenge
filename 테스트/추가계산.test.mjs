@@ -65,3 +65,18 @@ test('원문 금액 재진술은 허용하되 새로운 계산값은 차단',asy
  assert.equal(validateAnswer('총액 3000만원',ctx).status,'blocked');
  assert.equal(validateAnswer('자산 9000만원',ctx).status,'blocked');
 });
+
+test('수익률 없이 원금 목표계산 도구를 실행',async()=>{
+ const {savingsPrincipal}=await import('../재무설계_계산/생성/재무계산.js');
+ const input={currentAmount:70000000,monthlySaving:500000,months:60,targetAmount:300000000};
+ const r=savingsPrincipal(input);assert.equal(r.accumulated,100000000);assert.equal(r.shortage,200000000);assert.equal(r.requiredMonthlySaving,3833333);
+ assert.throws(()=>savingsPrincipal({...input,months:undefined}));
+ const ctx={profile:{facts:Object.fromEntries(Object.entries(input).map(([k,value])=>[k,{value,unit:k==='months'?'months':'KRW'}]))},calculations:[]};
+ assert.deepEqual(executeTool('calculate_savings_principal',{bindings:Object.fromEntries(Object.keys(input).map(k=>[k,k]))},ctx).result,r);
+});
+test('7천만원 사용자 표현을 7000만원으로 인식',async()=>{
+ const {numberInQuote}=await import('../AI/고객정보/고객정보.mjs');
+ const {numericClaims}=await import('../AI/재무설계_검증.mjs');
+ assert.equal(numberInQuote(70000000,'KRW','7천만원 모았어'),true);
+ assert.equal(numericClaims('7천만원')[0].value,70000000);
+});

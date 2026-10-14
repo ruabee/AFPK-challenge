@@ -13,14 +13,14 @@ const labels = {
 export function numericClaims(text) {
   return [
     ...text.matchAll(
-      /(-?\d[\d,]*(?:\.\d+)?)\s*(억\s*원|만\s*원|천\s*원|원|%)/g,
+      /(-?\d[\d,]*(?:\.\d+)?)\s*(천\s*만\s*원|억\s*원|만\s*원|천\s*원|원|%)/g,
     ),
   ].map((m) => ({
     text: m[0],
     decimals: (m[1].split(".")[1] || "").length,
     value:
       Number(m[1].replaceAll(",", "")) *
-      (m[2].startsWith("억")
+      (/^천\s*만/.test(m[2]) ? 1e7 : m[2].startsWith("억")
         ? 1e8
         : m[2].startsWith("만")
           ? 1e4
@@ -131,7 +131,7 @@ export function validateAnswer(
         const match = line
           .slice(line.indexOf(label) + label.length)
           .match(
-            /^\s*(?:은|는|:|=)?\s*(-?\d[\d,]*(?:\.\d+)?\s*(?:억\s*원|만\s*원|천\s*원|원))/,
+            /^\s*(?:은|는|:|=)?\s*(-?\d[\d,]*(?:\.\d+)?\s*(?:천\s*만\s*원|억\s*원|만\s*원|천\s*원|원))/,
           );
         if (match) {
           const val = numericClaims(match[1])[0]?.value;

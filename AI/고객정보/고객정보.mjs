@@ -110,14 +110,14 @@ export function numberInQuote(value, unit, quote) {
   if (unit === "KRW") {
     const matches = [
       ...quote.matchAll(
-        /(-?\d[\d,]*(?:\.\d+)?)\s*(억\s*원|만\s*원|천\s*원|원)/g,
+        /(-?\d[\d,]*(?:\.\d+)?)\s*(천\s*만\s*원|억\s*원|만\s*원|천\s*원|원)/g,
       ),
     ];
     return matches.some(
       (m) =>
         Math.abs(
           Number(m[1].replaceAll(",", "")) *
-            (m[2].startsWith("억")
+            (/^천\s*만/.test(m[2]) ? 1e7 : m[2].startsWith("억")
               ? 1e8
               : m[2].startsWith("만")
                 ? 1e4

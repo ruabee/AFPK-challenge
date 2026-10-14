@@ -324,3 +324,15 @@ export function loanPayment(input: Values) {
   const payment = r === 0 ? principal / term : principal * r / (1 - Math.pow(1 + r, -term));
   return { ...base, rateConvention:"명목 연이율/12", monthlyPayment: money(payment), totalPayment: money(payment * term), totalInterest: money(payment * term - principal), interpretation:"고정금리·거치 없는 월말 원리금균등 가정. 은행별 원단위 처리로 차이 가능. 승인한도·DSR 심사 아님" };
 }
+
+/** 이자·투자손익을 포함하지 않는 납입 원금 비교. 수익률 예측이 아니다. */
+export function savingsPrincipal(input: Values) {
+  const currentAmount = number(input.currentAmount, 'currentAmount');
+  const monthlySaving = number(input.monthlySaving, 'monthlySaving');
+  const term = months(input.months);
+  const targetAmount = number(input.targetAmount, 'targetAmount');
+  const accumulated = money(currentAmount + monthlySaving * term);
+  return { accumulated, shortage: money(Math.max(0, targetAmount - accumulated)),
+    requiredMonthlySaving: term ? money(Math.max(0, targetAmount-currentAmount)/term) : null,
+    unit:'KRW', basis:'이자·투자손익·물가·취득비용·대출을 제외한 납입 원금 비교이며 수익률 예측이 아닙니다.' };
+}
