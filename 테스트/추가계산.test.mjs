@@ -52,3 +52,16 @@ test('반복 입력 오류는 고정문 대신 전체 대화를 이용한 확인
  assert.doesNotMatch(result.body.reply,/금액의 기준 시점과 기간/);
  assert.equal(Object.keys(result.body.customerProfile.facts).length,0);
 });
+
+test('저장 예고만 최종 답변하면 실제 후속 처리를 요청',async()=>{
+ const {askClaude}=await import('../AI/클로드연결.mjs');let n=0;
+ const result=await askClaude({config:{key:'test',model:'test'},messages:[{role:'user',content:'매달 50만원 모을 수 있어'}],indexLoader:async()=>({documents:[],chunks:[]}),fetchImpl:async()=>new Response(JSON.stringify({content:[{type:'text',text:n++===0?'네, 먼저 저장하겠습니다.':'말씀하신 월 50만원을 목표 저축액으로 검토하겠습니다. 현재 모은 자금은 얼마인가요?'}]}))});
+ assert.equal(n,2);assert.match(result.body.reply,/현재 모은 자금/);assert.equal(result.body.validation.status,'checks_passed');
+});
+test('원문 금액 재진술은 허용하되 새로운 계산값은 차단',async()=>{
+ const {validateAnswer}=await import('../AI/재무설계_검증.mjs');
+ const ctx={messages:[{role:'user',content:'매달 50만원 가능해'},{role:'assistant',content:'자산은 9000만원'}]};
+ assert.equal(validateAnswer('말씀하신 월 50만 원',ctx).status,'checks_passed');
+ assert.equal(validateAnswer('총액 3000만원',ctx).status,'blocked');
+ assert.equal(validateAnswer('자산 9000만원',ctx).status,'blocked');
+});

@@ -66,10 +66,12 @@ function resultNumbers(value, out = [], key = "") {
 }
 export function validateAnswer(
   answer,
-  { profile, calculations = [], sources = [], question = "", asOf } = {},
+  { profile, calculations = [], sources = [], question = "", asOf, messages = [] } = {},
 ) {
   const issues = [];
   const allowed = [
+    // 원문 금액의 재진술은 저장 도구 성공 여부와 무관하다. 계산 결과는 별도 검증한다.
+    ...messages.filter(m => m.role === "user").flatMap(m => numericClaims(m.content)),
     ...Object.values(profile?.facts || {}).filter(
       (f) => typeof f.value === "number" && ["KRW", "percent"].includes(f.unit),
     ),

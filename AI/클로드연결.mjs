@@ -91,6 +91,7 @@ export async function askClaude({
     });
   let inputErrors = 0;
   let clarificationOnly = false;
+  let actionRetries = 0;
   let calls = 0,
     repair = false;
   for (let round = 0; round < 8; round++) {
@@ -170,6 +171,12 @@ export async function askClaude({
         status: 502,
         body: { error: "답변을 받지 못했습니다. 다시 시도해주세요." },
       };
+    const promiseOnly = reply.length < 180 && /저장|계산|시도/.test(reply) && /하겠습니다|할게요|드릴게요|시도할게요|합니다|진행할게요/.test(reply) && !/[?？]/.test(reply);
+    if (promiseOnly && actionRetries++ < 2 && round < 7) {
+      outgoing.push({role:"assistant",content:reply}, {role:"user",content:"아직 사용자에게 결과를 전달하지 않았습니다. 저장·계산하겠다는 예고만으로 끝내지 마세요. 정확한 계산이 불가능해도 잠정적인 상황 해석과 선택지를 먼저 설명하세요. 실제 필요한 도구를 지금 호출하고 결과와 실행안을 답하세요. 계산에 꼭 필요한 값이 없으면 이미 받은 정보는 반복 요청하지 말고, 누락 항목 하나만 구체적으로 질문하세요. 단위 없는 금액은 임의 변환하지 마세요."});
+      continue;
+    }
+    if (promiseOnly) return {status:502,body:{error:"상담 처리 중 실제 결과를 받지 못했습니다. 입력 내용은 유지되니 잠시 후 다시 시도해주세요."}};
     // 기존 시뮬레이터 수치는 원 단위로 변환한 감사용 사본에서만 검사합니다.
     const validation = validateAnswer(reply, {
       ...context,
