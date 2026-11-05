@@ -77,7 +77,7 @@ test("HTTP handles context, credentials, errors, origin and static allowlist", a
     for (const [path, marker] of [
       ["/", "AskYES"],
       ["/app.js", "function"],
-      ["/simulator.js", "function"],
+      ["/portfolio/index.html", "<html"],
       ["/style.css", ":root"],
     ]) {
       const asset = await fetch(base + path);

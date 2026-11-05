@@ -20,7 +20,6 @@ const assets = new Map([
   ["/index.html", ["화면.html", "text/html"]],
   ["/app.js", ["대화.js", "text/javascript"]],
   ["/planning-profile.js", ["고객정보.js", "text/javascript"]],
-  ["/simulator.js", ["투자시뮬레이터.js", "text/javascript"]],
   ["/style.css", ["디자인.css", "text/css"]],
 ]);
 export function makeHandler({
@@ -59,6 +58,13 @@ export function makeHandler({
           rag: (await loadIndex()).documents?.length > 0,
           planning: true,
         });
+      }
+      if (req.method === "GET" && /^\/portfolio\/(?:index\.html|assets\/[a-zA-Z0-9_.-]+)$/.test(path)) {
+        try {
+          const file = await readFile(new URL("FE" + path, root));
+          const type = path.endsWith(".js") ? "text/javascript" : path.endsWith(".css") ? "text/css" : "text/html";
+          res.writeHead(200, {"content-type":type+"; charset=utf-8","x-content-type-options":"nosniff"}); return res.end(file);
+        } catch { return json(res,404,{error:"찾을 수 없습니다."}); }
       }
       if (req.method === "GET" && assets.has(path)) {
         const [name, type] = assets.get(path);
