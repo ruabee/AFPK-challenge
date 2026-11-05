@@ -14,7 +14,7 @@ export function validateInput(i: SimulationInput): string[] {
   if (!Number.isFinite(i.initialAssets) || i.initialAssets < 0) errors.push('초기 자산은 0 이상이어야 합니다.');
   if (!Number.isInteger(i.years) || i.years < 1 || i.years > 80) errors.push('투자 기간은 1~80년 사이의 정수로 입력하세요.');
   if (!Number.isFinite(i.annualAmount) || i.annualAmount < 0) errors.push('연간 금액은 0 이상이어야 합니다.');
-  if (Math.abs(i.stockWeight + i.bondWeight - 100) > 1e-9) errors.push('주식 비중과 채권 비중의 합은 100%여야 합니다.');
+  if (![i.stockWeight,i.bondWeight].every(v => Number.isFinite(v) && v >= 0 && v <= 100) || Math.abs(i.stockWeight + i.bondWeight - 100) > 1e-9) errors.push('주식 비중과 채권 비중의 합은 100%여야 합니다.');
   return errors;
 }
 

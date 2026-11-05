@@ -9,13 +9,13 @@ import { useSimulation } from './hooks/useSimulation';
 import type { SimulationInput } from './types';
 
 const defaultInput: SimulationInput = {
-  currentAge: 35,
-  initialAssets: 5000,
-  years: 25,
-  annualAmount: 1200,
+  currentAge: NaN,
+  initialAssets: NaN,
+  years: NaN,
+  annualAmount: NaN,
   mode: 'accumulate',
-  stockWeight: 60,
-  bondWeight: 40,
+  stockWeight: NaN,
+  bondWeight: NaN,
 };
 
 export default function App() {
@@ -24,7 +24,22 @@ export default function App() {
   const issues = useMemo(() => validateDataset(dataset), [dataset]);
   const dataReady = issues.errors.length === 0;
   const [input, setInput] = useState<SimulationInput>(defaultInput);
-  const { result, running, error, run } = useSimulation(dataset);
+  useEffect(() => {
+    const listener = (event: MessageEvent) => {
+      if (event.origin !== location.origin || event.source !== window.parent || event.data?.type !== 'askyes-consultation') return;
+      const incoming = event.data.input;
+      if (!incoming || typeof incoming !== 'object') return;
+      const next = {...defaultInput};
+      for (const key of ['currentAge','initialAssets','years','annualAmount'] as const) {
+        if(typeof incoming[key] === 'number' && Number.isFinite(incoming[key]) && incoming[key] >= 0) next[key] = incoming[key];
+      }
+      setInput(next);
+    };
+    window.addEventListener('message',listener);
+    return () => window.removeEventListener('message',listener);
+  }, []);
+  const { result: lastResult, running, error, run } = useSimulation(dataset);
+  const result = lastResult && JSON.stringify(lastResult.input) === JSON.stringify(input) ? lastResult : null;
   const errors = validateInput(input);
 
   return (

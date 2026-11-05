@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <aside class="sidebar">
+    <aside class="sidebar" id="sideMenu">
       <a class="brand" href="./" aria-label="AskYES 홈">
         <span class="logo" aria-hidden="true">Y<span>•</span></span>
         <span class="wordmark">Ask<span>YES</span></span>
@@ -24,7 +24,7 @@
       <button class="nav active" id="chatNav">
         <span>◈</span> YES와 재무 상담 <i></i></button
       ><button class="nav" id="simNav">
-        <span>↗</span> 투자 시뮬레이터 <small>LAB</small>
+        <span>↗</span> 투자 시뮬레이터
       </button>
       <div class="label recent">RECENT CONVERSATIONS <span>＋</span></div>
       <button
@@ -58,6 +58,7 @@
     </aside>
     <div class="app">
       <header>
+        <button id="menuToggle" aria-controls="sideMenu" aria-expanded="false">☰ 메뉴</button>
         <div class="breadcrumb">
           내 워크스페이스 <span>/</span> <b>YES와 재무 상담</b>
         </div>
@@ -134,8 +135,11 @@
             </div>
           </div>
         </main>
-        <aside class="sim-panel" id="simPanel">
-          <div class="sim-top"><span class="lab-tag">↗ INVESTMENT LAB</span><a href="/portfolio/index.html" target="_blank" rel="noopener">크게 보기 ↗</a></div>
+        <aside class="sim-panel" id="simPanel" hidden>
+          <div class="sim-top"><span class="lab-tag">투자 시뮬레이터</span><a href="/portfolio/index.html" target="_blank" rel="noopener">크게 보기 ↗</a></div>
+          <p>상담에서 확인한 정보를 가져와 투자 조건을 직접 확인해보세요. 전체 자산을 투자금으로 자동 사용하지 않습니다.</p>
+          <button id="loadConsultation" class="send-sim">상담 정보 불러오기</button>
+          <p id="transferStatus" role="status"></p>
           <iframe id="portfolioFrame" title="주식·채권 포트폴리오 시뮬레이터" src="/portfolio/index.html" style="width:100%;height:1100px;border:0;border-radius:16px"></iframe>
         </aside>
       </div>
