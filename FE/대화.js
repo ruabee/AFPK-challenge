@@ -205,7 +205,7 @@ $("#loadConsultation").onclick = () => {
     if (months !== undefined && months % 12 === 0) payload.years = months / 12;
   }
   $("#portfolioFrame").contentWindow.postMessage({type:"askyes-consultation",input:payload},location.origin);
-  $("#transferStatus").textContent = "확인된 정보만 불러왔습니다. 월 저축액은 연간 금액으로 환산합니다. 빈칸과 투자 비중을 입력하고, 목표 자금이 실제 투자 가능한 금액인지 확인 후 실행하세요.";
+  $("#transferStatus").textContent = "확인된 항목만 반영했습니다. 나머지는 기존 설정이 유지됩니다. 월 저축액은 연간 금액으로 환산하므로 투자 가능한 금액과 비중을 확인 후 실행하세요.";
 };
 window.addEventListener("message", (event) => {
   if (event.origin !== location.origin || event.source !== document.getElementById("portfolioFrame")?.contentWindow) return;

@@ -26,7 +26,7 @@ h2 { font-size: 1.05rem; }
 .top h1 { font-size: 1.7rem; }
 .top p { margin: 6px 0 0; color: var(--muted); max-width: 60ch; }
 
-.layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+.layout { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 20px; align-items: start; }
 .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
 .results { display: grid; gap: 16px; min-width: 0; }
 
@@ -101,3 +101,13 @@ code { background: var(--bg); padding: 1px 5px; border-radius: 4px; font-size: 0
 }
 
 .notice ul { margin: 6px 0 0; padding-left: 18px; font-size: 0.88rem; }
+
+/* 브라우저의 fieldset 최소 너비가 입력 카드 밖으로 전파되지 않도록 제한 */
+.layout > *, .form > *, .field, .field-input, .weights { min-width: 0; }
+.field-input { width:100%; }
+.field-input input { width:0; flex:1 1 0; }
+.unit { flex:0 0 auto; white-space:nowrap; }
+.weights { width:100%; max-width:100%; }
+.weights legend { width:auto; max-width:100%; white-space:nowrap; }
+.segmented { grid-template-columns:repeat(2,minmax(0,1fr)); }
+@media(max-width:480px) { .app { padding:20px 12px 32px; } .panel { padding:16px; } }
