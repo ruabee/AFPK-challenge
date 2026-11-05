@@ -8,7 +8,7 @@ import {
   setupIntake,
   showIntake,
 } from "./planning-profile.js";
-import { settings, calculate, money } from "./simulator.js";
+
 
 const $ = (s) => document.querySelector(s);
 let turns = 0;
@@ -181,16 +181,13 @@ $("#prompt").onkeydown = (e) => {
 document
   .querySelectorAll("[data-topic]")
   .forEach((b) => (b.onclick = () => send(b.dataset.topic)));
-$("#sendSim").onclick = () => {
-  if (busy || pending) return;
-  const s = settings();
-  simulationContext = { ...s };
-  send(
-    `초기 ${money(s.initial)}, 매월 ${money(s.monthly)}, ${s.years}년, 연 ${s.rate}% 가정으로 이 투자 계획을 검토하고 싶어요.`,
-    s,
-  );
-  if (innerWidth < 981) $(".chat-panel").scrollIntoView({ behavior: "smooth" });
-};
+window.addEventListener("message", (event) => {
+  if (event.origin !== location.origin || event.source !== document.getElementById("portfolioFrame")?.contentWindow) return;
+  if (event.data?.type !== "askyes-portfolio" || typeof event.data.text !== "string" || event.data.text.length > 2000) return;
+  if (busy || pending) { event.source.postMessage({type:"askyes-portfolio-busy"},location.origin); return; }
+  send(event.data.text, null);
+  $(".chat-panel").scrollIntoView({behavior:"smooth"});
+});
 $("#newChat").onclick = () => {
   if (busy) return;
   $("#messages").innerHTML = "";
@@ -220,11 +217,10 @@ function modal(title, body) {
 $("#closeModal").onclick = () => $("#modal").close();
 $("#profileButton").onclick = showProfile;
 $("#reportButton").onclick = () => {
-  const s = settings(),
-    r = calculate(s);
+
   modal(
     "대화 요약",
-    `이번에 보낸 메시지 ${turns}건. 현재 시뮬레이션: 초기 ${money(s.initial)}, 월 ${money(s.monthly)}, ${s.years}년, 연 ${s.rate}% 가정. 예상 평가액 ${money(r.value)}. 현재 탭의 대화 기록만 유지됩니다. 새로고침하면 초기화됩니다.`,
+    `이번에 보낸 메시지 ${turns}건. 현재 탭의 대화 기록만 유지됩니다. 새로고침하면 초기화됩니다.`,
   );
 };
 $("#moreButton").onclick = () =>
