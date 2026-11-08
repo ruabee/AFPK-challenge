@@ -1311,3 +1311,20 @@ button:disabled {
 .intake-form [role=alert] { color:#a3233d; margin:0; }
 #modal { max-height:85vh; overflow:auto; }
 @media(max-width:600px) { .intake-form { grid-template-columns:1fr; } .intake-banner { flex-direction:column; align-items:stretch; } }
+
+/* 상담과 시뮬레이션을 별도 화면으로 전환 */
+.dashboard { grid-template-columns:minmax(0,1fr); max-width:1120px; }
+.sim-panel { display:block; width:100%; padding:24px; }
+.dashboard [hidden] { display:none !important; }
+.sim-panel iframe { height:1200px !important; }
+.sim-top a { color:var(--primary, #5349cc); }
+
+#menuToggle { display:none; }
+@media(max-width:600px) {
+  #menuToggle { display:block; border:0; border-radius:8px; padding:8px 12px; background:#e9efff; color:#27385f; position:relative; z-index:21; }
+  body.menu-open .sidebar { position:fixed; inset:0 auto 0 0; width:270px; height:100dvh; flex-direction:column; align-items:stretch; overflow-y:auto; padding:24px 18px 80px; z-index:20; box-shadow:0 0 0 100vmax #10182b66; }
+  body.menu-open .sidebar > * { display:block; }
+  body.menu-open .sidebar .brand, body.menu-open .sidebar .workspace { display:flex; }
+  body.menu-open #menuToggle { position:fixed; left:190px; top:14px; }
+  body.menu-open .sidebar .new-chat { margin-left:0; }
+}

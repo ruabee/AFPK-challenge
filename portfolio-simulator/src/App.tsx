@@ -24,13 +24,29 @@ export default function App() {
   const issues = useMemo(() => validateDataset(dataset), [dataset]);
   const dataReady = issues.errors.length === 0;
   const [input, setInput] = useState<SimulationInput>(defaultInput);
-  const { result, running, error, run } = useSimulation(dataset);
+  useEffect(() => {
+    const listener = (event: MessageEvent) => {
+      if (event.origin !== location.origin || event.source !== window.parent || event.data?.type !== 'askyes-consultation') return;
+      const incoming = event.data.input;
+      if (!incoming || typeof incoming !== 'object') return;
+      const patch: Partial<SimulationInput> = {};
+      for (const key of ['currentAge','initialAssets','years','annualAmount'] as const) {
+        if(typeof incoming[key] === 'number' && Number.isFinite(incoming[key]) && incoming[key] >= 0) patch[key] = incoming[key];
+      }
+      setInput(previous => ({...previous,...patch}));
+    };
+    window.addEventListener('message',listener);
+    return () => window.removeEventListener('message',listener);
+  }, []);
+  const { result: lastResult, running, error, run } = useSimulation(dataset);
+  const result = lastResult && JSON.stringify(lastResult.input) === JSON.stringify(input) ? lastResult : null;
   const errors = validateInput(input);
 
   return (
     <div className="app">
       <header className="top">
         <h1>포트폴리오 시뮬레이터</h1>
+        <p>처음 표시된 값은 예시입니다. 상담 정보를 불러오면 확인된 항목만 변경되고, 나머지 설정은 유지됩니다.</p>
         <p>주식·채권 역사적 수익률을 {DEFAULT_RUNS.toLocaleString('ko-KR')}번 다시 뽑아, 앞으로의 자산이 어디까지 갈 수 있는지 범위로 보여줍니다.</p>
       </header>
 

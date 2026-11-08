@@ -181,14 +181,42 @@ $("#prompt").onkeydown = (e) => {
 document
   .querySelectorAll("[data-topic]")
   .forEach((b) => (b.onclick = () => send(b.dataset.topic)));
+function showView(simulation) {
+  $(".chat-panel").hidden = simulation;
+  $("#simPanel").hidden = !simulation;
+  $("#mobileSim").textContent = simulation ? "← 상담으로 돌아가기" : "↗ 시뮬레이터";
+  $("#chatNav").classList.toggle("active", !simulation);
+  $("#simNav").classList.toggle("active", simulation);
+}
+$("#simNav").onclick = () => showView(true);
+$("#mobileSim").onclick = () => showView($("#simPanel").hidden);
+$("#compareButton").onclick = () => showView(true);
+$("#loadConsultation").onclick = () => {
+  const facts = getProfile().facts || {};
+  const read = key => facts[key]?.confirmed && Number.isFinite(facts[key].value) ? facts[key].value : undefined;
+  const payload = {};
+  const age = read("currentAge"), savings = read("monthlySavings");
+  if (age !== undefined) payload.currentAge = age;
+  if (savings !== undefined) payload.annualAmount = savings * 12 / 10000;
+  const goalIds = [...new Set(Object.keys(facts).filter(k => k.startsWith("goals.")).map(k => k.split(".")[1]))];
+  if (goalIds.length === 1) {
+    const amount = read(`goals.${goalIds[0]}.currentAmount`), months = read(`goals.${goalIds[0]}.months`);
+    if (amount !== undefined) payload.initialAssets = amount / 10000;
+    if (months !== undefined && months % 12 === 0) payload.years = months / 12;
+  }
+  $("#portfolioFrame").contentWindow.postMessage({type:"askyes-consultation",input:payload},location.origin);
+  $("#transferStatus").textContent = "확인된 항목만 반영했습니다. 나머지는 기존 설정이 유지됩니다. 월 저축액은 연간 금액으로 환산하므로 투자 가능한 금액과 비중을 확인 후 실행하세요.";
+};
 window.addEventListener("message", (event) => {
   if (event.origin !== location.origin || event.source !== document.getElementById("portfolioFrame")?.contentWindow) return;
   if (event.data?.type !== "askyes-portfolio" || typeof event.data.text !== "string" || event.data.text.length > 2000) return;
   if (busy || pending) { event.source.postMessage({type:"askyes-portfolio-busy"},location.origin); return; }
+  showView(false);
   send(event.data.text, null);
   $(".chat-panel").scrollIntoView({behavior:"smooth"});
 });
 $("#newChat").onclick = () => {
+  showView(false);
   if (busy) return;
   $("#messages").innerHTML = "";
   turns = 0;
@@ -206,6 +234,7 @@ $("#newChat").onclick = () => {
   showIntake();
 };
 $("#chatNav").onclick = () => {
+  showView(false);
   $(".chat-panel").scrollIntoView({ behavior: "smooth" });
   $("#prompt").focus({ preventScroll: true });
 };
@@ -244,7 +273,7 @@ $("#fileInput").onchange = () => {
 
 $("#messages").innerHTML = "";
 addMessage(
-  "안녕하세요. AskYES의 AI 재무설계 파트너 YES입니다.\n\n직접 세운 계획이나 상담받은 내용에서 어떤 점이 고민되시나요? 투자 예상 금액은 옆 시뮬레이터에서 확인하고 대화로 가져올 수 있어요.",
+  "안녕하세요. AskYES의 AI 재무설계 파트너 YES입니다.\n\n직접 세운 계획이나 상담받은 내용에서 어떤 점이 고민되시나요? 투자 시뮬레이터 메뉴에서 조건을 살펴보고 다시 상담을 이어갈 수 있어요.",
 );
 checkConnection();
 
@@ -255,3 +284,8 @@ setupIntake((text) => {
   send(text);
   return true;
 });
+
+function closeSideMenu() { document.body.classList.remove("menu-open"); $("#menuToggle").setAttribute("aria-expanded","false"); $("#menuToggle").textContent="☰ 메뉴"; }
+$("#menuToggle").onclick=()=>{ const open=document.body.classList.toggle("menu-open"); $("#menuToggle").setAttribute("aria-expanded",String(open)); $("#menuToggle").textContent=open?"✕ 닫기":"☰ 메뉴"; };
+$("#sideMenu").addEventListener("click", e=>{if(e.target.closest("button")) closeSideMenu();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape") closeSideMenu();});
