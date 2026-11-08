@@ -69,7 +69,7 @@ export const TOOLS = [
         query: str,
         asOf: {
           type: "string",
-          description: "YYYY-MM-DD. 생략하면 한국 기준 오늘",
+          description: "YYYY-MM-DD. 과거 귀속연도 질문은 해당 연도 말일로 지정. 생략하면 한국 기준 오늘",
         },
       },
       ["query"],
@@ -121,7 +121,7 @@ export const TOOLS = [
   {
     name: "validate_financial_plan",
     description:
-      "작성할 답변의 수치, 출처, 기준일을 실제 도구 실행 결과와 대조. 실패한 내용을 최종답변에 포함하지 말 것.",
+      "작성 답변의 수치·출처·기준일을 참고 검사. 이 검사 결과는 답변 전체를 차단하는 신호가 아니다. 근거가 부족한 특정 수치나 규정 주장은 단정하지 않되, 질문에 대한 일반 설명·선택지·다음 단계는 답한다.",
     input_schema: object({ answer: str }, ["answer"]),
   },
 ];
