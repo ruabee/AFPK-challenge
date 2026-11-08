@@ -17,6 +17,7 @@ const official = [
   "nts.go.kr",
   "law.go.kr",
   "nps.or.kr",
+  "nhis.or.kr",
   "fss.or.kr",
   "fsc.go.kr",
   "bok.or.kr",
@@ -159,11 +160,41 @@ export async function extract(file) {
   }
   return [{ page: 1, text }];
 }
-export function splitText(text, size = 1200, overlap = 150) {
-  const clean = text.replace(/\r\n/g, "\n").trim(),
-    parts = [];
-  for (let start = 0; start < clean.length; start += size - overlap)
-    parts.push(clean.slice(start, start + size));
+export function splitText(text, size = 650, overlap = 90) {
+  const clean = text.replace(/\r\n/g, "\n").trim();
+  const units = clean.split(/(?=^#{1,6}\s)/m);
+  const parts = [];
+  let current = "";
+  const splitLong = (unit) => {
+    const out = [];
+    let start = 0;
+    while (start < unit.length) {
+      let end = Math.min(start + size, unit.length);
+      if (end < unit.length) {
+        const boundary = unit.lastIndexOf(" ", end);
+        if (boundary > start + Math.floor(size * 0.65)) end = boundary;
+      }
+      out.push(unit.slice(start, end).trim());
+      if (end >= unit.length) break;
+      start = Math.max(start + 1, end - overlap);
+      while (start < unit.length && unit[start] === " ") start++;
+    }
+    return out.filter(Boolean);
+  };
+  for (const unit of units.map((part) => part.trim()).filter(Boolean)) {
+    if (unit.length > size) {
+      if (current) parts.push(current.trim());
+      current = "";
+      parts.push(...splitLong(unit));
+    } else if (!current) current = unit;
+    else if (current.length + unit.length + 2 <= size)
+      current += `\n\n${unit}`;
+    else {
+      parts.push(current.trim());
+      current = unit;
+    }
+  }
+  if (current) parts.push(current.trim());
   return parts;
 }
 async function files(root) {
