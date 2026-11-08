@@ -1,0 +1,23 @@
+{
+  "title": "2026년 10월 소비자물가지수 및 등락률 — 최근 물가 시나리오 참고",
+  "sourceUrl": "https://mods.go.kr/index.es?sid=b7",
+  "publisher": "국가데이터처",
+  "publishedAt": "2026-11-03",
+  "effectiveFrom": "2026-11-03",
+  "effectiveTo": "2026-12-01",
+  "reviewedAt": "2026-11-08",
+  "appliesTo": "2026년 10월 전체 소비자물가지수 전년동월비 2.8%의 기준월·공표일 확인 및 민감도 시나리오. 장기 물가 전망이나 주택·개별 목표 가격 상승률이 아니다.",
+  "reviewed": true,
+  "supersedes": [],
+  "indicators": [
+    {
+      "id": "cpi_yoy",
+      "name": "소비자물가지수 전년동월비",
+      "value": 2.8,
+      "unit": "percent",
+      "period": "2026-10",
+      "publishedAt": "2026-11-03",
+      "basis": "2020=100, 전년 동월 대비, 관측치이며 미래 전망 아님"
+    }
+  ]
+}

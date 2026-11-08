@@ -63,6 +63,23 @@ export function validateMetadata(m) {
       throw new Error(`${k} 날짜 형식 오류`);
   if (m.effectiveFrom > m.effectiveTo)
     throw new Error("적용 시작일이 종료일보다 늦습니다.");
+  if (
+    m.indicators !== undefined &&
+    (!Array.isArray(m.indicators) ||
+      m.indicators.some(
+        (x) =>
+          !x ||
+          typeof x.id !== "string" ||
+          typeof x.name !== "string" ||
+          typeof x.value !== "number" ||
+          !Number.isFinite(x.value) ||
+          typeof x.unit !== "string" ||
+          !/^\d{4}-\d{2}$/.test(x.period) ||
+          typeof x.publishedAt !== "string" ||
+          typeof x.basis !== "string",
+      ))
+  )
+    throw new Error("indicators 형식 오류: 검수된 수치·단위·기준월·기준 설명이 필요합니다.");
   if (m.reviewed !== true)
     throw new Error(
       "자료·시행일·적용대상을 검수한 뒤 reviewed:true로 설정하세요.",
@@ -85,8 +102,9 @@ export function validateMetadata(m) {
       "appliesTo",
       "supersedes",
       "publicationNote",
+      "indicators",
     ]
-      .map((k) => [k, k === "publishedAt" ? m[k] : m[k] ?? (k === "supersedes" ? [] : "")])
+      .map((k) => [k, k === "publishedAt" ? m[k] : m[k] ?? (k === "supersedes" || k === "indicators" ? [] : "")])
       .concat([["reviewed", true]]),
   );
 }
