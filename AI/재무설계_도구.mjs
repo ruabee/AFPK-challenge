@@ -84,14 +84,18 @@ export const TOOLS = [
   {
     name: "calculate_goal_funding",
     description:
-      "PV·FV·월 필요저축액·물가 반영 자금 계산. bindings 필수: months,annualRate 그리고 pv/fv/inflation이면 amount, monthlySaving이면 targetAmount,currentAmount. 모든 값은 저장된 사실 경로를 참조.",
+      "PV·FV·월 필요저축액 계산. bindings는 고객정보 경로다. 1년 초과 목표에서 기준이 모호하거나 사용자가 미래 명목 금액을 말하면 monthlySavingComparison으로 명목 목표 유지와 현재 구매력 유지 시나리오를 함께 비교한다. 최근 CPI를 먼저 공식 검색한 뒤 sourceId를 전달한다. 월저축 계산에서 수익률을 모르면 투자수익 제외 시나리오를 제공한다(사용자 수익률로 기록하지 않음). monthlySavingWithInflation은 amount가 오늘 구매력 기준 목표임이 분명할 때 사용한다.",
     input_schema: object(
       {
         operation: {
           type: "string",
-          enum: ["pv", "fv", "inflation", "monthlySaving"],
+          enum: ["pv", "fv", "inflation", "monthlySaving", "monthlySavingWithInflation", "monthlySavingComparison"],
         },
         bindings,
+        sourceId: {
+          type: "string",
+          description: "물가 반영 월저축 계산에 사용할 search_official_documents 결과의 CPI 출처 ID",
+        },
       },
       ["operation", "bindings"],
     ),
@@ -193,16 +197,35 @@ export function executeTool(name, input, ctx) {
       return record(name, inputs, financialStatus(inputs));
     }
     case "calculate_goal_funding": {
-      if (!["pv", "fv", "inflation", "monthlySaving"].includes(input.operation))
+      if (!["pv", "fv", "inflation", "monthlySaving", "monthlySavingWithInflation", "monthlySavingComparison"].includes(input.operation))
         throw new Error("지원하지 않는 계산입니다.");
+      const inflationAdjusted =
+        input.operation === "monthlySavingWithInflation" ||
+        input.operation === "monthlySavingComparison";
+      const returnSensitive =
+        inflationAdjusted || input.operation === "monthlySaving";
+      const annualReturnKnown =
+        !returnSensitive || typeof input.bindings?.annualRate === "string";
       const required = [
         "months",
-        "annualRate",
-        ...(input.operation === "monthlySaving"
+        ...(annualReturnKnown ? ["annualRate"] : []),
+        ...(input.operation === "monthlySaving" || input.operation === "monthlySavingComparison"
           ? ["targetAmount", "currentAmount"]
-          : ["amount"]),
+          : inflationAdjusted
+            ? ["amount", "currentAmount"]
+            : ["amount"]),
       ];
-      const inputs = { operation: input.operation };
+      const inputs = {
+        operation: input.operation,
+        ...(returnSensitive
+          ? {
+              annualRateIncluded: annualReturnKnown,
+              annualRate: annualReturnKnown
+                ? value(profile, input.bindings.annualRate, "percent")
+                : 0,
+            }
+          : {}),
+      };
       for (const k of required) {
         if (typeof input.bindings?.[k] !== "string")
           throw new Error(`${k}: 고객정보 경로가 필요합니다.`);
@@ -211,6 +234,19 @@ export function executeTool(name, input, ctx) {
           input.bindings[k],
           k === "months" ? "months" : k === "annualRate" ? "percent" : "KRW",
         );
+      }
+      if (inflationAdjusted) {
+        const source = ctx.sources.find((s) => s.id === input.sourceId);
+        const cpi = source?.metadata?.indicators?.find(
+          (item) => item.id === "cpi_yoy" && item.unit === "percent",
+        );
+        if (!cpi)
+          throw new Error(
+            "최신 CPI 공식 검색 결과가 필요합니다. 먼저 소비자물가 자료를 검색해주세요.",
+          );
+        inputs.inflationRate = cpi.value;
+        inputs.inflationPeriod = cpi.period;
+        inputs.inflationSourceId = source.id;
       }
       return record(
         name,

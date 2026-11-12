@@ -15,7 +15,7 @@
     "pretest": "npm run 계산:빌드",
     "prestart": "npm run 계산:빌드",
     "predev": "npm run 계산:빌드",
-    "시뮬레이터:빌드": "npm --prefix portfolio-simulator run build && node BE/시뮬레이터반영.mjs"
+    "시뮬레이터:빌드": "npm --prefix portfolio-simulator run build -- --base=/portfolio/ && node BE/시뮬레이터반영.mjs"
   },
   "devDependencies": {
     "pdfjs-dist": "^5.4.624",

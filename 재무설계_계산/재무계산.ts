@@ -125,6 +125,7 @@ export function goalFunding(input: Values) {
     r = rate(input.annualRate),
     growth = Math.pow(1 + r, n);
   let value: number;
+  let comparison: Values | undefined;
   if (operation === "pv") value = number(input.amount, "amount") / growth;
   else if (operation === "fv" || operation === "inflation")
     value = number(input.amount, "amount") * growth;
@@ -143,26 +144,99 @@ export function goalFunding(input: Values) {
         (target - current * growth) /
           (Math.abs(r) < 1e-12 ? n : (growth - 1) / r),
       );
+  } else if (operation === "monthlySavingComparison") {
+    const target = number(input.targetAmount, "targetAmount"),
+      current = number(input.currentAmount, "currentAmount"),
+      inflationRate = number(input.inflationRate, "inflationRate", -99, 100),
+      futureTarget = target * Math.pow(1 + inflationRate / 100, n / 12),
+      currentAtGoal = current * growth,
+      monthlyRequired = (goal: number) => {
+        if (n === 0) {
+          if (currentAtGoal < goal)
+            throw new CalculationError("남은 기간이 0개월이고 목표자금이 부족합니다.");
+          return 0;
+        }
+        return Math.max(0, (goal - currentAtGoal) / (Math.abs(r) < 1e-12 ? n : (growth - 1) / r));
+      };
+    value = monthlyRequired(target);
+    comparison = {
+      nominalTarget: money(target),
+      nominalTargetPurchasingPowerToday: money(target / Math.pow(1 + inflationRate / 100, n / 12)),
+      targetMaintainingTodayPurchasingPower: money(futureTarget),
+      monthlySavingForNominalTarget: money(monthlyRequired(target)),
+      monthlySavingForPurchasingPowerTarget: money(monthlyRequired(futureTarget)),
+      currentAmountAtGoal: money(currentAtGoal),
+      inflationRate,
+      inflationPeriod: input.inflationPeriod,
+    };
+  } else if (operation === "monthlySavingWithInflation") {
+    const targetToday = number(input.amount, "amount"),
+      current = number(input.currentAmount, "currentAmount"),
+      inflationRate = number(input.inflationRate, "inflationRate", -99, 100),
+      futureTarget =
+        targetToday * Math.pow(1 + inflationRate / 100, n / 12),
+      currentAtGoal = current * growth;
+    if (n === 0) {
+      if (currentAtGoal < futureTarget)
+        throw new CalculationError(
+          "남은 기간이 0개월이고 물가 반영 목표자금이 부족합니다.",
+        );
+      value = 0;
+    } else
+      value = Math.max(
+        0,
+        (futureTarget - currentAtGoal) /
+          (Math.abs(r) < 1e-12 ? n : (growth - 1) / r),
+      );
   } else
     throw new CalculationError(
-      "operation: pv, fv, inflation, monthlySaving 중 선택해주세요.",
+      "operation: pv, fv, inflation, monthlySaving, monthlySavingWithInflation 중 선택해주세요.",
     );
   return {
     ...base,
     operation,
     months: n,
     annualRate: input.annualRate,
+    ...(operation === "monthlySaving" || operation === "monthlySavingComparison" ||
+    operation === "monthlySavingWithInflation"
+      ? { annualRateIncluded: input.annualRateIncluded !== false }
+      : {}),
     value: money(value),
+    ...(operation === "monthlySavingWithInflation"
+      ? {
+          targetAmountToday: money(number(input.amount, "amount")),
+          targetAmountAtGoal: money(
+            number(input.amount, "amount") *
+              Math.pow(1 + number(input.inflationRate, "inflationRate") / 100, n / 12),
+          ),
+          currentAmountAtGoal: money(
+            number(input.currentAmount, "currentAmount") * growth,
+          ),
+          inflationRate: input.inflationRate,
+          inflationPeriod: input.inflationPeriod,
+        }
+      : {}),
+    ...(operation === "monthlySavingComparison" ? { comparison } : {}),
     formula:
       operation === "pv"
         ? "PV = FV / (1+r)^n"
-        : operation === "monthlySaving"
+        : operation === "monthlySavingComparison"
+          ? "최근 소비자물가 변화율을 일정하게 적용한 구매력 비교 시나리오이며 예측이 아님. 비교에는 명목 목표 유지와 현재 구매력 유지가 모두 포함됨"
+        : operation === "monthlySavingWithInflation"
+          ? "목표FV = 현재가치 목표 × (1+π)^(개월/12); 월저축 = max(0, (목표FV−현재자금×(1+r)^개월) / (((1+r)^개월−1)/r)); r=0이면 남은 금액/개월"
+          : operation === "monthlySaving"
           ? "PMT = max(0, (목표 − 현재자금×(1+r)^n) / (((1+r)^n−1)/r)); r=0이면 n으로 나눔"
           : "FV = PV × (1+r)^n",
     interpretation:
       operation === "inflation"
         ? "annualRate는 물가상승률; amount는 현재 구매력 기준 금액"
-        : "수익률은 명시적으로 제공된 가정이며 보장되지 않음",
+        : operation === "monthlySavingWithInflation"
+          ? "최근 소비자물가 변화율을 목표기간 동안 적용한 시나리오이며 예측이 아님. annualRate가 0이면 투자수익을 반영하지 않음"
+          : operation === "monthlySaving" && input.annualRateIncluded === false
+            ? "투자수익 제외 시나리오. 사용자의 예상수익률 0%라는 의미가 아님"
+        : operation === "monthlySaving" && input.annualRateIncluded === false
+          ? "투자수익 제외 시나리오. 사용자의 예상수익률 0%라는 의미가 아님"
+          : "수익률은 명시적으로 제공된 가정이며 보장되지 않음",
   };
 }
 type Pension = {

@@ -1,5 +1,3 @@
-export type Mode = 'accumulate' | 'withdraw';
-
 /**
  * 한 해의 수익률. 반드시 소수 표기입니다 (10% → 0.10, -35% → -0.35, 2.5% → 0.025).
  * 같은 해의 주식·채권 값은 한 행에 함께 넣으며, 시뮬레이션에서도 같은 해끼리 함께 뽑힙니다.
@@ -25,18 +23,36 @@ export interface MarketDataset {
   returns: HistoricalReturn[];
 }
 
-/** 금액 단위는 만원, 비중은 % (0~100) */
+/** 금액 단위는 만원, 비중과 물가상승률은 % */
 export interface SimulationInput {
   currentAge: number;
+  /** 초기 투자금 (0 가능) */
   initialAssets: number;
   years: number;
-  annualAmount: number;
-  mode: Mode;
+  /** 월 적립액. 매월 말 납입하며 물가에 연동하지 않는 고정 명목 금액 */
+  monthlyAmount: number;
+  /** 연 물가상승률 (%). 명목 자산을 현재 구매력 기준 실질 자산으로 바꿀 때 사용 */
+  inflationRate: number;
+  /** 사용자 지정 전략의 주식 비중 (0~100) */
+  stockWeight: number;
+  /** 사용자 지정 전략의 채권 비중 (0~100) */
+  bondWeight: number;
+  /** 난수 시드. null이면 자동 생성하며, 실제 사용된 값은 결과의 seed에 기록된다 */
+  seed: number | null;
+}
+
+export type StrategyId = 'A' | 'B' | 'C' | 'custom';
+
+export interface Strategy {
+  id: StrategyId;
+  label: string;
+  /** % (0~100) */
   stockWeight: number;
   bondWeight: number;
 }
 
 export interface YearPercentiles {
+  /** 투자 경과 연수 (0 = 투자 시작 시점) */
   year: number;
   age: number;
   p10: number;
@@ -44,26 +60,47 @@ export interface YearPercentiles {
   p90: number;
 }
 
-export interface DepletionStats {
-  /** 투자 기간 안에 자산이 고갈된 시나리오 비율 (0~1) */
-  probability: number;
-  /** 자산이 유지된 연수의 중앙값 (기간 전체 유지 시 투자 기간과 같음) */
-  sustainedYearsP50: number;
-  /** 하위 10% 시나리오 기준 유지 연수 */
-  sustainedYearsP10: number;
+export interface Percentiles {
+  p10: number;
+  p50: number;
+  p90: number;
+}
+
+export interface StrategyResult extends Strategy {
+  /** 만기 명목 자산 (series 마지막 값과 동일) */
+  final: Percentiles;
+  /** 만기 실질 자산 (현재 구매력 기준, realSeries 마지막 값과 동일) */
+  finalReal: Percentiles;
+  /** 만기 명목 최종 자산 < 총 납입 원금 인 경로의 비율 (0~1) */
+  lossProbability: number;
+  /** 만기 실질 최종 자산 < 실질 환산 납입 원금 인 경로의 비율 (0~1) */
+  realLossProbability: number;
+  /** 연도별 명목 자산 분위수 */
+  series: YearPercentiles[];
+  /** 연도별 실질 자산 분위수 (명목 ÷ (1+물가상승률)^경과연수) */
+  realSeries: YearPercentiles[];
 }
 
 export interface SimulationResult {
   input: SimulationInput;
   runs: number;
+  /** 실제로 사용된 난수 시드. 같은 입력과 시드는 같은 결과를 재현한다 */
+  seed: number;
   datasetName: string;
   /** 실제로 사용된 역사적 연도 수 */
   observations: number;
   returnType: 'nominal' | 'real';
   initialAssets: number;
-  /** 적립 모드: 총 적립금, 인출 모드: 총 인출 계획액 */
-  totalFlow: number;
-  final: { p10: number; p50: number; p90: number };
-  series: YearPercentiles[];
-  depletion?: DepletionStats;
+  /** 총 납입 원금 = 초기 투자금 + 월 적립금 × 12 × 투자기간 */
+  totalContributed: number;
+  /** 연도별(0..years) 누적 납입 원금 (명목) */
+  principalSeries: number[];
+  /** 연도별 누적 납입 원금을 현재 구매력으로 환산한 값 */
+  realPrincipalSeries: number[];
+  /** 만기 실질 환산 납입 원금 (= realPrincipalSeries 마지막 값) */
+  realTotalContributed: number;
+  /** 만기까지 누적 물가 배수 (1+물가상승률)^기간 */
+  inflationFactor: number;
+  /** 같은 시장 시나리오가 적용된 전략들 (A, B, C, 사용자 지정 순) */
+  strategies: StrategyResult[];
 }
