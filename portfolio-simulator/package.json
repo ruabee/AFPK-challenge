@@ -7,8 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
-    "verify": "node scripts/verify.mjs"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -21,9 +20,5 @@
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.6.3",
     "vite": "^5.4.11"
-  },
-  "engines": {
-    "node": ">=18.18"
-  },
-  "description": "주식·채권 역사적 수익률 기반 월 적립식 몬테카를로 투자 시뮬레이터"
+  }
 }
